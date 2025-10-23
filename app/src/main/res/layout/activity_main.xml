@@ -29,5 +29,13 @@
         android:layout_height="wrap_content"
         android:text="Clear All Data"/>
 
+    <Button
+        android:id="@+id/btn_profile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Lihat Profil"
+        android:layout_marginTop="16dp" />
+
+
 
 </LinearLayout>

@@ -31,7 +31,7 @@
         android:id="@+id/btnBack"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Login Sebagai Username"
+        android:text="Kembali ke beranda"
         android:layout_marginBottom="16dp" />
 
     <Button

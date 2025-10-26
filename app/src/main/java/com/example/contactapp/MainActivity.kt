@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.widget.Toast
 import android.view.Menu
 import android.view.MenuItem
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.contactapp.data.Contact

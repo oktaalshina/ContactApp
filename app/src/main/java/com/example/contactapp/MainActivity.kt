@@ -2,54 +2,78 @@ package com.example.contactapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.contactapp.data.Contact
 import com.example.contactapp.databinding.ActivityMainBinding
+import com.example.contactapp.ui.adapter.ContactAdapter
+import java.util.UUID
 
-class MainActivity : AppCompatActivity() {
-
+class MainActivity : AppCompatActivity(), ContactAdapter.ContactListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefManager: PrefManager
+    private lateinit var adapter: ContactAdapter
+
+    private val contacts = mutableListOf<Contact>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
-        // Inisialisasi binding dan prefManager
         binding = ActivityMainBinding.inflate(layoutInflater)
-        prefManager = PrefManager.getInstance(this)
-
-        checkLoginStatus()
         setContentView(binding.root)
 
-        // Handle UI dengan binding
-        with(binding) {
-            val loggedInUsername = prefManager.getUsername()
-            txtUsername.text = "Login sebagai: ${loggedInUsername}"
+        prefManager = PrefManager.getInstance(this)
+        checkLoginStatus()
 
-            // Tombol menuju halaman Profile
-            btnProfile.setOnClickListener {
-                val intent = Intent(this@MainActivity, ProfileActivity::class.java)
-                startActivity(intent)
-            }
+        binding.txtUsername.text = "Nama pengguna: ${prefManager.getUsername() ?: "-"}"
 
-            // Tombol Logout
-            btnLogout.setOnClickListener {
-                prefManager.setLoggedIn(false)
-                val intent = Intent(this@MainActivity, LoginActivity::class.java)
-                startActivity(intent)
-                finish()
-            }
+        adapter = ContactAdapter(this)
+        binding.rvContacts.layoutManager = LinearLayoutManager(this)
+        binding.rvContacts.adapter = adapter
+
+        contacts.addAll(
+            listOf(
+                Contact(UUID.randomUUID().toString(),"Tom Lembong","tom@mail.com","0812-1111-2222"),
+                Contact(UUID.randomUUID().toString(),"Anies Baswedan","anies@mail.com","0812-1213-2222"),
+                Contact(UUID.randomUUID().toString(),"Okta Alshina","okta@mail.com","0813-2222-3333"),
+                Contact(UUID.randomUUID().toString(),"Marshika Murni","mardhika@mail.com","0814-3333-4444"),
+                Contact(UUID.randomUUID().toString(),"Della Nurizki","della@mail.com","0815-4444-5555")
+            )
+        )
+        adapter.submitList(contacts.toList())
+
+        binding.btnProfile.setOnClickListener { startActivity(Intent(this, ProfileActivity::class.java)) }
+        binding.btnLogout.setOnClickListener {
+            prefManager.setLoggedIn(false)
+            startActivity(Intent(this, LoginActivity::class.java)); finish()
+        }
+        binding.btnClear.setOnClickListener {
+            prefManager.clear(); checkLoginStatus()
         }
     }
 
-    // Fungsi untuk cek status login
+    override fun onView(c: Contact) {
+        Toast.makeText(this, "View ${c.name}", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onEdit(c: Contact) {
+        Toast.makeText(this, "Edit ${c.name}", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onDelete(c: Contact) {
+        val idx = contacts.indexOfFirst { it.id == c.id }
+        if (idx != -1) {
+            contacts.removeAt(idx)
+            adapter.submitList(contacts.toList())
+        }
+    }
+
+    override fun onRowClick(c: Contact) { /* optional */ }
+
     private fun checkLoginStatus() {
-        val isLoggedIn = prefManager.isLoggedIn()
-        if (!isLoggedIn) {
-            val intent = Intent(this@MainActivity, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
+        if (!prefManager.isLoggedIn()) {
+            startActivity(Intent(this, LoginActivity::class.java)); finish()
         }
     }
 }

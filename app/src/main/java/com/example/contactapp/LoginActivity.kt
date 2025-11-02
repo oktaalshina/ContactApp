@@ -15,15 +15,16 @@ class LoginActivity : AppCompatActivity(){
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        //assign binding
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-
         prefManager = PrefManager.getInstance(this)
 
+        // jika sudah login, langsung ke main
+        checkLoginStatus()
+
+        //assign binding
+        binding = ActivityLoginBinding.inflate(layoutInflater)
         //set content view
         setContentView(binding.root)
 
-        //handle UI with binding
         with(binding) {
 
             btnLogin.setOnClickListener {
@@ -47,14 +48,19 @@ class LoginActivity : AppCompatActivity(){
                         ).show()
 
                         //navigasi ke mainactivity
+                        goToMain()
 
-                        var intent = Intent(this@LoginActivity, MainActivity::class.java)
-                        startActivity(intent)
-                        finish()
+                    } else {
+                        // feedback jika login gagal
+                        Toast.makeText(
+                            this@LoginActivity,
+                            "Username atau Password salah!",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
-            //handle navigasi ke halaman register
+            // navigasi ke halaman register
             txtRegister.setOnClickListener {
                 var intent = Intent(
                     this@LoginActivity,
@@ -73,5 +79,18 @@ class LoginActivity : AppCompatActivity(){
         val inputPassword = binding.edtPassword.text.toString()
 
         return username == inputUsername && password == inputPassword
+    }
+
+    // auto login
+    private fun checkLoginStatus() {
+        if (prefManager.isLoggedIn()) {
+            goToMain()
+        }
+    }
+
+    private fun goToMain() {
+        val intent = Intent(this@LoginActivity, MainActivity::class.java)
+        startActivity(intent)
+        finish() // tutup loginactivity
     }
 }

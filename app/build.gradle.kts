@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mycontact" // Menggunakan mycontact sesuai struktur folder
+    namespace = "com.example.contactapp" // Menggunakan contactapp sesuai struktur folder
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.mycontact"
+        applicationId = "com.example.contactapp"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

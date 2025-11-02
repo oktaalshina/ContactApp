@@ -5,19 +5,40 @@ import android.os.Bundle
 import android.widget.Toast
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.contactapp.data.Contact
-import com.example.contactapp.databinding.ActivityMainBinding
 import com.example.contactapp.ui.adapter.ContactAdapter
-import java.util.UUID
+import com.example.contactapp.databinding.ActivityMainBinding
+import com.example.contactapp.data.ContactViewModel
+import androidx.lifecycle.ViewModelProvider // <-- PENTING UNTUK FACTORY
+import com.example.contactapp.data.AppDatabase
+import com.example.contactapp.data.ContactRepository
+import com.example.contactapp.data.ContactViewModelFactory
+import com.example.contactapp.databinding.FormContactBinding
 
 class MainActivity : AppCompatActivity(), ContactAdapter.ContactListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefManager: PrefManager
     private lateinit var adapter: ContactAdapter
+    // 1. Buat "Pekerja"-nya (Repository) dulu.
+    //    Dia pakai AppDatabase.get(this) -> (ini dari AppDatabase.kt-mu)
+    private val contactRepository by lazy {
+        ContactRepository(AppDatabase.get(this).contactDao())
+    }
 
-    private val contacts = mutableListOf<Contact>()
+    // 2. Buat "Pabrik"-nya (Factory) dan kasih "Pekerja"
+    private val contactViewModelFactory by lazy {
+        ContactViewModelFactory(contactRepository)
+    }
+
+    // 3. BARU kita buat ViewModel-nya pakai "Pabrik" itu
+    private val contactViewModel: ContactViewModel by lazy {
+        ViewModelProvider(this, contactViewModelFactory).get(ContactViewModel::class.java)
+    }
+
+//    private val contacts = mutableListOf<Contact>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,16 +55,20 @@ class MainActivity : AppCompatActivity(), ContactAdapter.ContactListener {
         binding.rvContacts.layoutManager = LinearLayoutManager(this)
         binding.rvContacts.adapter = adapter
 
-        contacts.addAll(
-            listOf(
-                Contact(UUID.randomUUID().toString(),"Tom Lembong","tom@mail.com","0812-1111-2222"),
-                Contact(UUID.randomUUID().toString(),"Anies Baswedan","anies@mail.com","0812-1213-2222"),
-                Contact(UUID.randomUUID().toString(),"Okta Alshina","okta@mail.com","0813-2222-3333"),
-                Contact(UUID.randomUUID().toString(),"Marshika Murni","mardhika@mail.com","0814-3333-4444"),
-                Contact(UUID.randomUUID().toString(),"Della Nurizki","della@mail.com","0815-4444-5555")
-            )
-        )
-        adapter.submitList(contacts.toList())
+//        contacts.addAll(
+//            listOf(
+//                Contact(name = "Tom Lembong", phone = "0812-1111-2222"),
+//                Contact(name = "Anies Baswedan", phone = "0812-1213-2222"),
+//                Contact(name = "Okta Alshina", phone = "0813-2222-3333"),
+//                Contact(name = "Marshika Murni", phone = "0814-3333-4444"),
+//                Contact(name = "Della Nurizki", phone = "0815-4444-5555")
+//            )
+//        )
+//        adapter.submitList(contacts.toList())
+
+        contactViewModel.allContacts.observe(this) { listKontak ->
+            adapter.submitList(listKontak)
+        }
 
         binding.btnProfile.setOnClickListener { startActivity(Intent(this, ProfileActivity::class.java)) }
         binding.btnLogout.setOnClickListener {
@@ -53,6 +78,9 @@ class MainActivity : AppCompatActivity(), ContactAdapter.ContactListener {
         binding.btnClear.setOnClickListener {
             prefManager.clear(); checkLoginStatus()
         }
+        binding.btnAdd.setOnClickListener {
+            showAddDialog()
+        }
     }
 
     override fun onView(c: Contact) {
@@ -60,15 +88,13 @@ class MainActivity : AppCompatActivity(), ContactAdapter.ContactListener {
     }
 
     override fun onEdit(c: Contact) {
-        Toast.makeText(this, "Edit ${c.name}", Toast.LENGTH_SHORT).show()
+        // Panggil dialog edit
+        showEditDialog(c)
     }
 
     override fun onDelete(c: Contact) {
-        val idx = contacts.indexOfFirst { it.id == c.id }
-        if (idx != -1) {
-            contacts.removeAt(idx)
-            adapter.submitList(contacts.toList())
-        }
+        // Langsung suruh ViewModel yang hapus
+        contactViewModel.delete(c)
     }
 
     override fun onRowClick(c: Contact) { /* optional */ }
@@ -97,5 +123,56 @@ class MainActivity : AppCompatActivity(), ContactAdapter.ContactListener {
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+    private fun showAddDialog() {
+        var binding = FormContactBinding.inflate(layoutInflater)
+        var builder = AlertDialog.Builder(this)
+        builder.setTitle("Add New Contact")
+        builder.setView(binding.root)
+
+        builder.setPositiveButton("Save") { dialog, which ->
+            var name = binding.edtName.text.toString().trim()
+            var phone = binding.edtPhone.text.toString().trim()
+
+            if (name.isNotEmpty() && phone.isNotEmpty()) {
+                val newContact = Contact(name = name, phone = phone)
+                contactViewModel.insert(newContact) // Panggil ViewModel
+                dialog.dismiss()
+            } else {
+                Toast.makeText(this, "Nama dan Phone harus diisi", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNeutralButton("Cancel") { dialog, _ -> dialog.dismiss() }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    // --- FUNGSI DIALOG EDIT (Versi ViewModel) ---
+    private fun showEditDialog(contact: Contact) {
+        var binding = FormContactBinding.inflate(layoutInflater)
+        var builder = AlertDialog.Builder(this)
+        builder.setTitle("Edit Contact")
+        builder.setView(binding.root)
+
+        // Isi data lama
+        binding.edtName.setText(contact.name)
+        binding.edtPhone.setText(contact.phone)
+
+        builder.setPositiveButton("Save") { dialog, which ->
+            var name = binding.edtName.text.toString().trim()
+            var phone = binding.edtPhone.text.toString().trim()
+
+            if (name.isNotEmpty() && phone.isNotEmpty()) {
+                // Buat objek baru dengan ID yang sama
+                val updatedContact = contact.copy(name = name, phone = phone)
+                contactViewModel.update(updatedContact) // Panggil ViewModel
+                dialog.dismiss()
+            } else {
+                Toast.makeText(this, "Nama dan Phone harus diisi", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNeutralButton("Cancel") { dialog, _ -> dialog.dismiss() }
+        val dialog = builder.create()
+        dialog.show()
     }
 }

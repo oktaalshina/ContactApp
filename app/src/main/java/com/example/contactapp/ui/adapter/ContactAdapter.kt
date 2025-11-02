@@ -38,7 +38,7 @@ class ContactAdapter(
     override fun onBindViewHolder(h: VH, pos: Int) {
         val c = getItem(pos)
         h.txtName.text = c.name
-        h.txtSub.text  = "${c.email} • ${c.phone}"
+        h.txtSub.text  = "${c.phone}"
         h.itemView.setOnClickListener { listener.onRowClick(c) }
         h.btnView.setOnClickListener  { listener.onView(c) }
         h.btnEdit.setOnClickListener  { listener.onEdit(c) }

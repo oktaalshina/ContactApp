@@ -23,7 +23,6 @@ class RegisterActivity : AppCompatActivity() {
         //set content view
         setContentView(binding.root)
 
-        //handle UI with binding
         with(binding) {
 
             // handle ketika user klik register
@@ -38,53 +37,45 @@ class RegisterActivity : AppCompatActivity() {
                         "Semua field harus diisi!",
                         Toast.LENGTH_SHORT
                     ).show()
-                } else if (password != confirmPassword) { //handle jika password dan confirm password tidak sesuai
+                } else if (password != confirmPassword) {
                     Toast.makeText(
                         this@RegisterActivity,
                         "Password dan Confirm Password tidak sesuai!",
                         Toast.LENGTH_SHORT
                     ).show()
                 } else {
-                    //jika sudah sesuai semua persyaratan register
-                    //simpan data ke sharedPreferences
+                    // jika sudah sesuai semua persyaratan register
+                    // simpan data ke sharedPreferences
                     prefManager.saveUsername(username)
                     prefManager.savePassword(password)
                     prefManager.setLoggedIn(true)
-                    checkLoginStatus()
+
+                    // kasih selamat dan lempar ke Main
+                    Toast.makeText(
+                        this@RegisterActivity,
+                        "Register Berhasil! Selamat datang.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    goToMain()
                 }
             }
-            //handle navigasi ke halaman register
+            // navigasi ke halaman register
             txtLogin.setOnClickListener {
                 var intent = Intent(
                     this@RegisterActivity,
                     LoginActivity::class.java
                 )
                 startActivity(intent)
+                finish()
             }
         }
     }
 
-    // buat fungsi untuk navigasi setelah register berhasil
-    fun checkLoginStatus() {
-        var isLoggedIn = prefManager.isLoggedIn()
-        if (isLoggedIn) {
-            //jika sukses login
-            //navigasi user ke halaman main
-            Toast.makeText(
-                this@RegisterActivity,
-                "Register Berhasil!",
-                Toast.LENGTH_SHORT
-            ).show()
-
-            var intent = Intent(this@RegisterActivity, MainActivity::class.java)
-            startActivity(intent)
-            finish()
-        } else {
-            Toast.makeText(
-                this@RegisterActivity,
-                "Register Gagal!",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+    private fun goToMain() {
+        val intent = Intent(this@RegisterActivity, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish() // tutup registeractivity
     }
 }
